@@ -64,54 +64,6 @@ int IsKeyword(string instr)
     return 25;
 }
 
-//空格处理
-void HandleSpace(char a[])
-{
-    int j=0;
-    memset(word,0,255);//需要清空，不然可能残留上次的字符串
-    temp=false;
-    for(int i=0;    i<strlen(a);    i++)
-    {
-
-        if(a[i]!=' ' && a[i]!='\t')
-        {
-            word[j++]=a[i];
-            temp=false;
-        }
-        else
-        {
-
-            if(!temp&&a[i]!='\t')
-            {
-                word[j++]=a[i];
-                temp=true;
-            }
-
-        }
-    }
-}
-
-//处理"//"注释
-void prePro()
-{
-    int j=0;
-    memset(tempstr,0,255);
-    for(int i=0;     i<strlen(word);    i++)
-    {
-        if(word[i]=='/'&&word[i+1]=='/')
-        {
-            while(i<strlen(word))
-            {
-                i++;
-            }
-        }
-
-        else {
-            tempstr[j++]=word[i];
-        }
-    }
-}
-
 int main()
 {
     char instr[255]={}; //接收输入字符串
@@ -125,9 +77,6 @@ int main()
     //否则文本输出
     while((gets(instr))!=NULL)
     { 
-//        HandleSpace(instr);
- //       prePro();
-//        str=strtok(tempstr,delims);//分割字符串
         if(*(instr)=='#') {
             printf("#\n");
             
