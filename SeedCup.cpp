@@ -103,16 +103,15 @@ int suffix_value(char* suffix) {
 
     return stack[0];
 }
-
 int mathOperator(char *expr){
     char suffix[1000];
     infix_to_suffix(expr,suffix);
     return suffix_value(suffix);
 }
+
 void next(){
     token = token->next;
     line_number = token->line_number;
-    if(token)
     if(token->type == INT){
         int_handler();
     }
@@ -131,16 +130,43 @@ void next(){
     else if(token->type == ELSE){
 
     }
+    else if(token->type == VAR){
+        Word *temp;
+        temp = token->next;
+        if(temp->type == ASSIGN){
+            var_handler();
+        }
+        else if(temp->type == MATHOP){
 
+        }
+        else{
 
+        }
+    }
+    else if(token->type == PRINTF){
+
+    }
+}
+void var_handler(){
+    string name = token->name;
+    token = token->next->next;
+    update_var(get_value(name),expression(1));
 }
 void int_handler(){
     while(token->type!=SEMICOLON){
         next();
-        if(token->type == VAR){
-
-        }
-    }
+//        while(token->type == VAR){
+//            string name = token->name;
+//            save_var(1,name);
+//            next();
+//            if(token->type == ASSIGN){
+//                update_var(get_value(name),expression(1));
+//            }
+//            if(token->type != SEMICOLON){
+//                next();
+//            }
+//        }
+//    }
 }
 void if_handler(){
 
@@ -151,39 +177,55 @@ void for_handler(){
 }
 
 void while_handler(){
+    next();
+    if(token->type == LC) {
+        expression(0);
+        next();
+    }
+    if(token->type == LR){
+        next();
+        if(token->type == LBC){
+            while(token->type!=LBR){
+                next();
 
+            }
+        }
+    }
 }
 
-void save_var(int type,char *name,char *expr){
-    if(type == TRUE){
+void save_var(int type,string name){
+    if(type){
         Var *temp = (Var*)malloc(sizeof(Var));
         temp->is_var = TRUE;
         temp->name = name;
-        temp->value = mathOperator(expr);
+        temp->parent = current_var;
+        current_var->next = temp;
+        current_var = temp;
+    }
+    else{
+        Var *temp = (Var*)malloc(sizeof(Var));
+        temp->is_var = FALSE;
         temp->parent = current_var;
         current_var->next = temp;
         current_var = temp;
     }
 }
-void update_handler(){
+void update_var(Var *var,int result){
 
 }
 void do_while_handler(){
 
 }
-int get_value(char *name){
+Var* get_value(string name){
     Var *temp = current_var;
     while(temp->parent!=NULL) {
-        if(hashfunc(name)==temp->hash){
-            return temp->value;
+        if(temp->name == name){
+            return temp;
         }
         else{
             temp = temp->parent;
         }
     }
-}
-int hashfunc(char *name){
-
 }
 void match(string tk) {
     if (token->name == tk) {
@@ -208,17 +250,21 @@ int is_have_var(string name){
     }
     return flag;
 }
+int expression(int type){
 
+}
 
 
 
 int main(){
     //current_line = start;
     //next();
-    while(token->next!=NULL){
-        next();
-    }
+//    while(token->next!=NULL){
+//        next();
+//    }
     string sname;
+    int a = 1;
+    sname = "1+(-1)";
     const char *cname=sname.c_str();
     char ccname[500];
     strcpy(ccname, cname);
