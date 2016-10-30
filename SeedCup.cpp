@@ -12,6 +12,7 @@ int is_assign = 0;
 
 void init(){
     start = lex();
+    printf("\n\n\n\n");
     start = start->next;
     root = (Var*)malloc(sizeof(Var));
     root->is_var = FALSE;
