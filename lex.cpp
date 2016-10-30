@@ -1,24 +1,8 @@
-#include<iostream>
-#include<stdio.h>
-#include<string.h>
-#include<stdlib.h>
-using namespace std;
-#define LEN sizeof(struct word)
 
-typedef struct word *Position;
-typedef struct word{
-    int type;
-    string name;
-    int line_number;
-    Position next;
-    Position prev;
-}Word;
-enum {
-    INT,VAR,MATHOP,ASSIGN,COMOP,WHILE,FOR,DO,IF,ELSE,SEMICOLON,BREAK,LBC,RBC,COMMA,INC,LC,RC,PRINTF,NUMBER,RNC,DEC,STRING,NOTKNOWN
-};
-string keyword[9]={"if","while","do","int","break","else","for","printf"};
+#include"lex.h"
+string keyword[8]={"if","while","do","int","break","else","for","printf"};
 
-int keyword_num[9]={1,2,3,4,5,6,7,8,9};
+int keyword_num[9]={IF,WHILE,DO,INT,BREAK,ELSE,FOR,PRINTF};
 //部分运算符，定界符等
 char symbol[9]={'*','/','=',';','(',')','{','}',','};
 //对应的种码值
@@ -35,7 +19,7 @@ Position AddToken(string name,int type,int line  ){
 //判断是否为字母
 bool IsLetter(char ch)
 {
-    if((ch>='a'&&ch<='z')||(ch>='A'&&ch<='Z'))
+    if((ch>='a'&&ch<='z')||(ch>='A'&&ch<='Z')||(ch=='_'))
         return true;
     return false;
 }
@@ -62,7 +46,7 @@ int IsSymbol(char ch)
 //判断是否为关键字
 int IsKeyword(string str)
 {
-    for(int i=0;    i<26;    i++)
+    for(int i=0;    i<8;    i++)
     {
         if(str==keyword[i])
         {
@@ -70,18 +54,19 @@ int IsKeyword(string str)
         }
     }
     //不是关键字即为ID
-    return 25;
+    return 8;
 }
-
+//词法分析器
 Position lex() {
     Position HEAD,Last,Temp;
     HEAD = (Position)malloc(LEN);
     Last = HEAD;
+    HEAD->prev = NULL;
     char instr[255]={}; //接收输入字符串
     bool flag=false; //多行注释标志,false为未处于注释区域
     string Token;//存放字符串
     char *str=NULL;
-    freopen("/Users/yifan/Desktop/c++/lex/test.cpp","r",stdin);
+    freopen("/Users/yifan/seedcup/SeedCup/test.cpp","r",stdin);
     int line=1;
 //    freopen("result.txt","w",stdout); //此行注释后，控制台输出，
     //否则文本输出
@@ -116,15 +101,15 @@ Position lex() {
                         Token+=*(instr+i);
                         i++;
                     }
-                    if(IsKeyword(Token)!=25){
-                        Temp = AddToken(Token,VAR,line);
+                    if(IsKeyword(Token)!=8){
+                        Temp = AddToken(Token,keyword_num[IsKeyword(Token)],line);
                         Last->next= Temp;
                         Temp->prev = Last;
                         Last=Temp;
                         printf("%s---->%d\n",Token.c_str(),keyword_num[IsKeyword(Token)]);
                         printf("Token {%d, line:%d,%s }\n",Last->type,Last->line_number,Last->name.c_str());
                     }else {
-                        Temp = AddToken(Token, VAR, line);
+                        Temp = AddToken(Token,VAR,line);
                         Last->next= Temp;
                         Temp->prev = Last;
                         Last=Temp;
@@ -277,9 +262,13 @@ Position lex() {
 }
 int main(){
     Position Last = lex();
+    printf("\n\n\n");
+    Last = Last->next;
     while(Last->next!=NULL){
         printf("Token {%d,   line:%d,     %s }\n",Last->type,Last->line_number,Last->name.c_str());
         Last = Last->next;
     }
+    printf("Token {%d,   line:%d,     %s }\n",Last->type,Last->line_number,Last->name.c_str());
+
     return 0;
 }
