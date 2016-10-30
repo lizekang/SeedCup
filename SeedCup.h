@@ -14,7 +14,7 @@ using namespace std;
 #define TRUE 1
 #define FALSE 0
 enum{
-    INT,VAR,MATHOP,ASSIGN,COMOP,WHILE,FOR,DO,IF,ELSE,SEMICOLON,BREAK,LBC,LBR,COMMA,INC,LC,LR,PRINTF
+    INT,VAR,MATHOP,ASSIGN,COMOP,WHILE,FOR,DO,IF,ELSE,SEMICOLON,BREAK,LBC,RBC,COMMA,INC,LC,RC,PRINTF,NUMBER,RNC,DEC,STRING
 };//依次为变量类型,四则运算符,等号,比较运算符,
 /*word节点,包含类型和名称*/
 typedef struct word{
@@ -41,20 +41,30 @@ typedef struct var_node{
 }Var;
 
 
-void int_handler();
 void init();
+void next(int is_stop);
+
 int mathOperator(char *expr);
-void int_handler();
+
+void int_handler(int is_stop);
+void var_handler(int is_stop);
+void printf_handler(int is_stop);
 void if_handler();
 void for_handler();
 void while_handler();
 void do_while_handler();
+
 void save_var(int type,string name);
 void update_var(Var* var,int result);
-void out_scope();
 Var* get_value(string name);
-void match(string tk);
 int is_have_var(string name);
+
+void in_scope(Word *first_word);
+void out_scope();
+void free_scope_var();
+
 int expression(int type);
-void var_handler();
+
+void jump_through_block();
+void print_line(int line);
 #endif //SEEDCUP_SEEDCUP_H

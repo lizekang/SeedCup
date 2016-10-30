@@ -1,4 +1,3 @@
-
 #include "SeedCup.h"
 
 /*全局变量*/
@@ -9,12 +8,15 @@ Var *current_scope;
 Var *current_var;
 Var *temp_var;
 int line_number;
-
+int last_line;
+int is_assign = 0;
 
 void init(){
+    root = (Var*)malloc(sizeof(Var));
     root->is_var = FALSE;
-    root->parent = NULL;
-    current_var = root;
+    root->parent = root->next = NULL;
+    root->scope = NULL;
+    current_var = current_scope = root;
     token = start;
 }
 
@@ -103,17 +105,22 @@ int suffix_value(char* suffix) {
 
     return stack[0];
 }
+
 int mathOperator(char *expr){
     char suffix[1000];
     infix_to_suffix(expr,suffix);
     return suffix_value(suffix);
 }
 
-void next(){
+void next(int is_stop){
     token = token->next;
+    if(token == NULL) {
+        return;
+    }
     line_number = token->line_number;
+
     if(token->type == INT){
-        int_handler();
+        int_handler(is_stop);
     }
     else if(token->type == FOR){
         for_handler();
@@ -127,49 +134,146 @@ void next(){
     else if(token->type == IF){
         if_handler();
     }
-    else if(token->type == ELSE){
-
-    }
     else if(token->type == VAR){
-        Word *temp;
-        temp = token->next;
-        if(temp->type == ASSIGN){
+        /*Word *prevtemp,*nexttemp;
+        prevtemp = token->prev;
+        nexttemp = token->next;
+        if(prevtemp->type == COMMA||prevtemp->type == INT){
+            string name = token->name;
+            save_var(1,name);
+        }
+        if(nexttemp->type == ASSIGN){
             var_handler();
-        }
-        else if(temp->type == MATHOP){
-
-        }
-        else{
-
-        }
+        }*/
+        var_handler(is_stop);
     }
     else if(token->type == PRINTF){
-
+        printf_handler(is_stop);
+    }
+    else if(token->type == SEMICOLON){
+        if(token->prev->type == SEMICOLON || token->prev->type == RBC){
+            next(0);
+        }
     }
 }
-void var_handler(){
-    string name = token->name;
-    token = token->next->next;
-    update_var(get_value(name),expression(1));
-}
-void int_handler(){
-    while(token->type!=SEMICOLON){
-        next();
-//        while(token->type == VAR){
-//            string name = token->name;
-//            save_var(1,name);
-//            next();
-//            if(token->type == ASSIGN){
-//                update_var(get_value(name),expression(1));
-//            }
-//            if(token->type != SEMICOLON){
-//                next();
-//            }
-//        }
-//    }
-}
-void if_handler(){
 
+void var_handler(int is_stop){
+    print_line(token->line_number);
+    if(token->next->type == ASSIGN) {
+        is_assign = 1;
+        string name = token->name;
+        token = token->next;
+        update_var(get_value(name), expression(1));
+        is_assign = 0;
+        if(token->type == SEMICOLON){
+            if(is_stop == 0)
+                next(0);
+        }
+    }
+    else if(is_assign == 0){
+        expression(1);
+        if(token->type ==SEMICOLON){
+            if(is_stop == 0)
+                next(0);
+        }
+    }
+}
+
+void int_handler(int is_stop){
+    string name;
+    print_line(token->line_number);
+    while(1){
+        token = token->next;
+        if(token->type == VAR&&token->next->type == ASSIGN){
+            is_assign = 1;
+            name = token->name;
+            save_var(1,name);
+            token = token->next;
+            update_var(get_value(name),expression(1));
+            is_assign = 0;
+            if(token->type == COMMA){
+                continue;
+            }
+            else if(token->type == SEMICOLON){
+                break;
+            }
+        }
+    }
+    if(is_stop == 0)
+        next(0);
+}
+
+void printf_handler(int is_stop){
+    print_line(token->line_number);
+    next(0);
+    if(is_stop == 0){
+        if(token->type == LC){
+            while(token->type != SEMICOLON){
+                next(0);
+            }
+            next(0);
+        }
+    }
+    else{
+        if(token->type == LC){
+            while(token->type != SEMICOLON){
+                next(0);
+            }
+        }
+    }
+
+}
+
+void if_handler() {
+    Word *first_word = token;
+    token = token->next; //跳过if本身, 到'('处
+
+    print_line(token->line_number);
+
+    if (!expression(0)) {
+        //跳过if的域
+        if (token->next->type != LBC) {
+            while (token->type != SEMICOLON) {
+                token = token->next;
+            }
+        } else {
+            jump_through_block();
+        }
+        //接着查看是否有else或者else if
+        if (token != NULL && (token->type == RBC || token->type == SEMICOLON)) {
+            if (token->next->type == ELSE) {
+                token = token->next;
+                if (token->next->type == IF) {
+                    token = token->next;
+                    if_handler();
+                } else {
+                    in_scope(first_word); //改变作用域
+                    if (token->next->type != LBC) {
+                        next(1); //执行else的下一句语句，执行完后token指针应指在'}'或';'处
+                    } else {
+                        token = token->next; //跳到'{'
+                        next(0); //执行else内的语句, 执行完后token指针应指在'}'或';'处
+                    }
+                    out_scope();
+                }
+            }
+        }
+    }
+    else {
+        in_scope(first_word); //改变作用域
+        if (token->next->type != LBC) {
+            next(1);
+        } else {
+            token = token->next; //跳到'{'
+            next(0); //执行if内的语句, 执行完后token指针应指在'}'处
+        }
+        out_scope(); //跳出作用域
+        //跳过之后所有的else if和else
+        while (token->next->type == ELSE) {
+            jump_through_block();
+        }
+    }
+    next(0);
 }
 
 void for_handler(){
@@ -177,45 +281,75 @@ void for_handler(){
 }
 
 void while_handler(){
-    next();
-    if(token->type == LC) {
+    token = token->next;
+    /*if(token->type == LC) {
         expression(0);
-        next();
     }
-    if(token->type == LR){
-        next();
+    if(token->type == RC){
+        token = token->next;
         if(token->type == LBC){
-            while(token->type!=LBR){
-                next();
 
+            Var *new_scope = (Var*)malloc(sizeof(VAR));
+            new_scope->firstWord = token->next;
+            new_scope->parent = current_var;
+            current_var->scope = new_scope;
+            new_scope->is_var = FALSE;
+
+            while(token->type!=RBC){
+                next(0);
             }
         }
+    }*/
+    if(token->type == LC){
+        expression(0);
     }
 }
 
 void save_var(int type,string name){
-    if(type){
-        Var *temp = (Var*)malloc(sizeof(Var));
-        temp->is_var = TRUE;
-        temp->name = name;
-        temp->parent = current_var;
-        current_var->next = temp;
-        current_var = temp;
+    if(current_var->is_var) {
+        if (type) {
+            Var *temp = (Var *) malloc(sizeof(Var));
+            temp->is_var = TRUE;
+            temp->name = name;
+            temp->parent = current_var;
+            current_var->next = temp;
+            current_var = temp;
+        }
+        else {
+            Var *temp = (Var *) malloc(sizeof(Var));
+            temp->is_var = FALSE;
+            temp->parent = current_var;
+            current_var->next = temp;
+            current_var = temp;
+        }
     }
     else{
-        Var *temp = (Var*)malloc(sizeof(Var));
-        temp->is_var = FALSE;
-        temp->parent = current_var;
-        current_var->next = temp;
-        current_var = temp;
+        if (type) {
+            Var *temp = (Var *) malloc(sizeof(Var));
+            temp->is_var = TRUE;
+            temp->name = name;
+            temp->parent = current_var;
+            current_var->scope = temp;
+            current_var = temp;
+        }
+        else {
+            Var *temp = (Var *) malloc(sizeof(Var));
+            temp->is_var = FALSE;
+            temp->parent = current_var;
+            current_var->scope = temp;
+            current_var = temp;
+        }
     }
 }
-void update_var(Var *var,int result){
 
+void update_var(Var *var,int result){
+    var->value = result;
 }
+
 void do_while_handler(){
 
 }
+
 Var* get_value(string name){
     Var *temp = current_var;
     while(temp->parent!=NULL) {
@@ -226,15 +360,18 @@ Var* get_value(string name){
             temp = temp->parent;
         }
     }
+    return NULL;
 }
-void match(string tk) {
-    if (token->name == tk) {
-        next();
-    } else {
-        printf("%d: expected token: %s\n", token->line_number, tk);
-        return;
-    }
-}
+
+//void match(string tk) {
+//    if (token->name == tk) {
+//        next();
+//    } else {
+//        printf("%d: expected token: %s\n", token->line_number, tk);
+//        return;
+//    }
+//}
+
 int is_have_var(string name){
     Var *temp = current_var;
     int flag = 0;
@@ -250,18 +387,155 @@ int is_have_var(string name){
     }
     return flag;
 }
-int expression(int type){
 
+int expression(int type) {
+    if (type) {
+        string expr = "";
+        next(0);
+        int flag = 0;
+        while ((token->type == VAR) || (token->type == NUMBER) || (token->type == MATHOP)
+               || (token->type == LC) || (token->type == RC) || (token->type == INC)) {
+            if (token->type == VAR) {
+                if (is_have_var(token->name)) {
+                    expr += to_string(get_value(token->name)->value);
+                }
+            }
+            else if (token->type == INC) {
+                Word *prev_token = token->prev;
+                if (is_have_var(prev_token->name)) {
+                    Var *var = get_value(prev_token->name);
+                    expr += to_string(var->value);
+                    update_var(var, var->value+1);
+                }
+            }
+            else {
+                if (token->type == LC) {
+                    flag++;
+                } else if (token->type == RC) {
+                    flag--;
+                    if (flag == 0) {
+                        break;
+                    }
+                }
+                expr += token->name;
+            }
+
+            next(0);
+        }
+        char c_expr[255];
+        strcpy(c_expr, expr.c_str());
+        return mathOperator(c_expr);
+    }
+    else {
+        int result = 0;
+        int a = expression(1);
+        if (token->type != COMOP && token->type != ASSIGN) {
+            result = a;
+        }
+        else {
+            Word *prev_token = token->prev;
+            string assign = token->name;
+            int b = expression(1);
+
+            if (assign == ">") {
+                if (a > b) {
+                    result = 1;
+                }
+            } else if (assign == "<") {
+                if (a < b) {
+                    result = 1;
+                }
+            } else if (assign == "==") {
+                if (a == b) {
+                    result = 1;
+                }
+            } else if (assign == ">=") {
+                if (a >= b) {
+                    result = 1;
+                }
+            } else if (assign == "<=") {
+                if (a <= b) {
+                    result = 1;
+                }
+            } else if (assign == "=") {
+                if (is_have_var(prev_token->name)) {
+                    Var *var = get_value(prev_token->name);
+                    update_var(var, b);
+                }
+                result = 1;
+            }
+        }
+
+        if (token->type == COMMA) {
+            result = expression(0);
+        }
+
+        return result;
+    }
 }
 
+void print_line(int line){
+    if(line!=last_line){
+        printf("%d ",line);
+        last_line = line;
+    }
+}
 
+void in_scope(Word *first_word) {
+    Var *new_scope = (Var*)malloc(sizeof(Var));
+    new_scope->is_var = FALSE;
+    new_scope->parent = current_var;
+    new_scope->next = NULL;
+    new_scope->firstWord = first_word;
+
+    current_var->next = new_scope;
+    current_var = new_scope;
+    current_scope = new_scope;
+}
+
+void out_scope() {
+    Var *scope_temp = current_scope->parent;
+    Var *var_temp = current_scope->parent;
+    free_scope_var();
+
+    while (scope_temp->is_var != 0) {
+        scope_temp = scope_temp->parent;
+    }
+
+    current_scope = scope_temp;
+    free(current_var);
+    current_var = var_temp;
+    current_var->next = NULL;
+}
+
+void free_scope_var() {
+    Var *temp1 = current_var;
+    while (temp1->is_var != 0) {
+        Var *temp2 = temp1->next;
+        free(temp1);
+        temp1 = temp2;
+    }
+    current_var = temp1;
+    current_var->next = NULL;
+}
+
+void jump_through_block() {
+    int flag = 0;
+    while (1) {
+        if (token->type == LBC) {
+            flag++;
+        } else if (token->type == RBC) {
+            flag--;
+            if (flag == 0) {
+                break;
+            }
+        }
+        token = token->next;
+    }
+}
 
 int main(){
-    //current_line = start;
-    //next();
-//    while(token->next!=NULL){
-//        next();
-//    }
+    next(0);
     string sname;
     int a = 1;
     sname = "1+(-1)";
