@@ -13,7 +13,6 @@ int is_assign = 0;
 void init(){
     start = lex();
     printf("\n\n\n\n");
-    start = start->next;
     root = (Var*)malloc(sizeof(Var));
     root->is_var = FALSE;
     root->parent = root->next = NULL;
@@ -120,7 +119,7 @@ void next(int is_stop){
         return;
     }
     line_number = token->line_number;
-
+    printf("%d", token->type);
     if(token->type == INT){
         int_handler(is_stop);
     }
@@ -186,19 +185,24 @@ void int_handler(int is_stop){
     print_line(token->line_number);
     while(1){
         token = token->next;
-        if(token->type == VAR&&token->next->type == ASSIGN){
+        if(token->type == VAR && token->next->type == ASSIGN){
             is_assign = 1;
             name = token->name;
             save_var(1,name);
             token = token->next;
-            update_var(get_value(name),expression(1));
+            update_var(get_value(name), expression(1));
             is_assign = 0;
-            if(token->type == COMMA){
-                continue;
-            }
-            else if(token->type == SEMICOLON){
-                break;
-            }
+        }
+        else if(token->type == VAR){
+            name = token->name;
+            save_var(1,name);
+            token=token->next;
+        }
+        if(token->type == COMMA) {
+            continue;
+        }
+        else if(token->type == SEMICOLON) {
+            break;
         }
     }
     if(is_stop == 0)
@@ -384,7 +388,7 @@ int is_have_var(string name){
             break;
         }
         else{
-            temp = temp->next;
+            temp = temp->parent;
         }
     }
     return flag;
@@ -537,6 +541,7 @@ void jump_through_block() {
 }
 
 int main(){
+    printf("\n%d\n", INT);
     init();
     next(0);
 //    string sname;
