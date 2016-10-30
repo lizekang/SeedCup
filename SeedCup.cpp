@@ -1,5 +1,4 @@
 #include "SeedCup.h"
-
 /*全局变量*/
 Var *root;
 Word *start;
@@ -12,6 +11,8 @@ int last_line;
 int is_assign = 0;
 
 void init(){
+    start = lex();
+    start = start->next;
     root = (Var*)malloc(sizeof(Var));
     root->is_var = FALSE;
     root->parent = root->next = NULL;
@@ -535,15 +536,16 @@ void jump_through_block() {
 }
 
 int main(){
+    init();
     next(0);
-    string sname;
-    int a = 1;
-    sname = "1+(-1)";
-    const char *cname=sname.c_str();
-    char ccname[500];
-    strcpy(ccname, cname);
-    int result = mathOperator(ccname);
-    printf("%d",result);
+//    string sname;
+//    int a = 1;
+//    sname = "1+(-1)";
+//    const char *cname=sname.c_str();
+//    char ccname[500];
+//    strcpy(ccname, cname);
+//    int result = mathOperator(ccname);
+//    printf("%d",result);
     return 0;
 }
 

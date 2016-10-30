@@ -135,7 +135,7 @@ Position lex() {
             }
             //++
             if((*(instr+i)=='+') && (*(instr+i+1)=='+')){
-                Temp = AddToken("++",RNC,line);
+                Temp = AddToken("++",INC,line);
                 Last->next= Temp;
                 Temp->prev = Last;
                 Last=Temp;
@@ -154,7 +154,7 @@ Position lex() {
             }
             //--
             if(*(instr+i)=='-'&&(*(instr+i+1))=='-'){
-                Temp = AddToken("--",INC,line);
+                Temp = AddToken("--",DEC,line);
                 Last->next= Temp;
                 Temp->prev = Last;
                 Last=Temp;
@@ -250,15 +250,15 @@ Position lex() {
     return HEAD;
 }
 
-int main(){
-    Position Last = lex();
-    printf("\n\n\n");
-    Last = Last->next;
-    while(Last->next!=NULL){
-        printf("Token {%d,   line:%d,     %s }\n",Last->type,Last->line_number,Last->name.c_str());
-        Last = Last->next;
-    }
-    printf("Token {%d,   line:%d,     %s }\n",Last->type,Last->line_number,Last->name.c_str());
-
-    return 0;
-}
+//int main(){
+//    Position Last = lex();
+//    printf("\n\n\n");
+//    Last = Last->next;
+//    while(Last->next!=NULL){
+//        printf("Token {%d,   line:%d,     %s }\n",Last->type,Last->line_number,Last->name.c_str());
+//        Last = Last->next;
+//    }
+//    printf("Token {%d,   line:%d,     %s }\n",Last->type,Last->line_number,Last->name.c_str());
+//
+//    return 0;
+//}

@@ -16,11 +16,12 @@ typedef struct word{
     Position prev;
 }Word;
 enum {
-    INT,VAR,MATHOP,ASSIGN,COMOP,WHILE,FOR,DO,IF,ELSE,SEMICOLON,BREAK,LBC,RBC,COMMA,INC,LC,RC,PRINTF,NUMBER,RNC,DEC,STRING,NOTKNOWN
+    INT,VAR,MATHOP,ASSIGN,COMOP,WHILE,FOR,DO,IF,ELSE,SEMICOLON,BREAK,LBC,RBC,COMMA,LC,RC,PRINTF,NUMBER,INC,DEC,STRING,NOTKNOWN
 };
 bool IsLetter(char ch);
 bool IsDigit(char ch);
 int IsSymbol(char ch);
 int IsKeyword(string str);
+Position AddToken(string name,int type,int line  );
 Position lex();
 #endif //SEEDCUP_LEX_H

@@ -9,21 +9,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include <memory.h>
-#include <malloc.h>
+#include "lex.h"
 using namespace std;
 #define TRUE 1
 #define FALSE 0
-enum{
-    INT,VAR,MATHOP,ASSIGN,COMOP,WHILE,FOR,DO,IF,ELSE,SEMICOLON,BREAK,LBC,RBC,COMMA,INC,LC,RC,PRINTF,NUMBER,RNC,DEC,STRING
-};//依次为变量类型,四则运算符,等号,比较运算符,
+
 /*word节点,包含类型和名称*/
-typedef struct word{
-    int type;
-    string name;
-    int line_number;
-    struct word *next;
-    struct word *prev;
-}Word;
+
 
 
 typedef struct var_node{
