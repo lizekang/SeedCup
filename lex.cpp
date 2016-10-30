@@ -5,8 +5,8 @@ string keyword[8]={"if","while","do","int","break","else","for","printf"};
 int keyword_num[9]={IF,WHILE,DO,INT,BREAK,ELSE,FOR,PRINTF};
 
 //部分运算符，定界符等
-char symbol[9]={'*','/','=',';','(',')','{','}',','};
-int symbol_num[9]={MATHOP,MATHOP,ASSIGN,SEMICOLON,LC,RC,LBC,RBC,COMMA};
+char symbol[9]={'*','/',';','(',')','{','}',','};
+int symbol_num[9]={MATHOP,MATHOP,SEMICOLON,LC,RC,LBC,RBC,COMMA};
 
 //添加Token
 Position AddToken(string name,int type,int line  ){
@@ -87,7 +87,6 @@ Position lex() {
             }
             //标识符，关键词
             if(IsLetter(*(instr+i))&&(!flag)){
-                //printf("进入标识符判断\n");
                 while(IsLetter(*(instr+i))||IsDigit(*(instr+i))||*(instr+i)=='_'){
                     Token+=*(instr+i);
                     i++;
@@ -97,21 +96,15 @@ Position lex() {
                     Last->next= Temp;
                     Temp->prev = Last;
                     Last=Temp;
-                    printf("%s---->%d\n",Token.c_str(),keyword_num[IsKeyword(Token)]);
-                    printf("Token {%d, line:%d,%s }\n",Last->type,Last->line_number,Last->name.c_str());
                 }else {
                     Temp = AddToken(Token,VAR,line);
                     Last->next= Temp;
                     Temp->prev = Last;
                     Last=Temp;
-                    printf("%s---->25\n", Token.c_str());
-                    printf("Token {%d, line:%d,%s }\n",Last->type,Last->line_number,Last->name.c_str());
                 }
                 Token="";
-                //printf("退出标识符判断\n");
             }
             if(IsDigit(*(instr+i))&&(!flag)){
-                //printf("进入数字判断\n");
                 while(IsDigit(*(instr+i))){
                     Token+=*(instr+i);
                     i++;
@@ -120,49 +113,51 @@ Position lex() {
                 Last->next= Temp;
                 Temp->prev = Last;
                 Last=Temp;
-                printf("%s------>26\n",Token.c_str());
-                printf("Token {%d, line:%d,%s }\n",Last->type,Last->line_number,Last->name.c_str());
                 Token="";
             }
+            //!=
+            if((*(instr+i)=='!') && (*(instr+i+1)=='=') &&(!flag)){
+                Temp = AddToken("!=",COMOP,line);
+                Last->next= Temp;
+                Temp->prev = Last;
+                Last=Temp;
+                i++;
+            }
             //+
-            if((*(instr+i)=='+') && (*(instr+i+1)!='+')){
+            if((*(instr+i)=='+') && (*(instr+i+1)!='+')&&(!flag)){
                 Temp = AddToken("+",MATHOP,line);
                 Last->next= Temp;
                 Temp->prev = Last;
                 Last=Temp;
-                printf("+ ------>+\n");
-                printf("Token {%d, line:%d,%s }\n",Last->type,Last->line_number,Last->name.c_str());
             }
             //++
-            if((*(instr+i)=='+') && (*(instr+i+1)=='+')){
+            if((*(instr+i)=='+') && (*(instr+i+1)=='+')&&(!flag)){
                 Temp = AddToken("++",INC,line);
                 Last->next= Temp;
                 Temp->prev = Last;
                 Last=Temp;
-                printf("++ ------>444\n");
-                printf("Token {%d, line:%d,%s }\n",Last->type,Last->line_number,Last->name.c_str());
                 i++;
             }
-            //-
-            if((*(instr+i)=='-') && ((*(instr+i+1))!='-')){
-                Temp = AddToken("-",MATHOP,line);
-                Last->next= Temp;
-                Temp->prev = Last;
-                Last=Temp;
-                printf("- -------->-\n");
-                printf("Token {%d, line:%d,%s }\n",Last->type,Last->line_number,Last->name.c_str());
+            // -或者-1,或者-a(a为变量)
+            if((*(instr+i)=='-')){
+                if(((*(instr+i-1)=='+') || (*(instr+i-1)=='*') || (*(instr+i-1) == '/')) && (!flag)){
+                    Token += '-';
+                }else if((*(instr + i) == '-') && ((*(instr + i + 1)) != '-') &&(!flag)) {
+                    Temp = AddToken("-", MATHOP, line);
+                    Last->next = Temp;
+                    Temp->prev = Last;
+                    Last = Temp;
+                }
             }
             //--
-            if(*(instr+i)=='-'&&(*(instr+i+1))=='-'){
+            if(*(instr+i)=='-'&&(*(instr+i+1))=='-'&&(!flag)){
                 Temp = AddToken("--",DEC,line);
                 Last->next= Temp;
                 Temp->prev = Last;
                 Last=Temp;
-                printf("-- -------->555\n");
-                printf("Token {%d, line:%d,%s }\n",Last->type,Last->line_number,Last->name.c_str());
                 i++;
             }
-            if(*(instr+i)=='\"'){
+            if(*(instr+i)=='\"'&&(!flag)){
                 char *temp_string =NULL;
                 temp_string = instr;
                 int s =i;
@@ -172,7 +167,7 @@ Position lex() {
                         temp_string = (instr+s);
                     }
                 }
-                while(temp_string != (instr+i)){
+                while((temp_string != (instr+i))&&(!flag)){
                     Token+=*(instr+i);
                     i++;
                 }
@@ -182,37 +177,35 @@ Position lex() {
                 Last->next= Temp;
                 Temp->prev = Last;
                 Last=Temp;
-                printf("%s\n",Token.c_str());
-                printf("Token {%d, line:%d,%s }\n",Last->type,Last->line_number,Last->name.c_str());
                 Token="";
+            }
+            if(*(instr+i)=='='&&(!flag)){
+                if(*(instr+i+1)=='='){
+                    Temp = AddToken("==",COMOP,line);
+                    Last->next= Temp;
+                    Temp->prev = Last;
+                    Last=Temp;
+                    i++;
+                }else{
+                    Temp = AddToken("=",ASSIGN,line);
+                    Last->next= Temp;
+                    Temp->prev = Last;
+                    Last=Temp;
+                }
             }
             //<,<=,<>
             if(*(instr+i)=='<'&&(!flag)){
-                if(*(instr+i)=='='){
+                if(*(instr+i+1)=='='){
                     Temp = AddToken("<=",COMOP,line);
                     Last->next= Temp;
                     Temp->prev = Last;
                     Last=Temp;
-                    printf("<=------>35\n");
-                    printf("Token {%d, line:%d,%s }\n",Last->type,Last->line_number,Last->name.c_str());
                     i++;
-                }
-                if(*(instr+i)=='>'){
-                    Temp = AddToken("<>",COMOP,line);
-                    Last->next= Temp;
-                    Temp->prev = Last;
-                    Last=Temp;
-                    printf("<>------>34\n");
-                    printf("Token {%d, line:%d,%s }\n",Last->type,Last->line_number,Last->name.c_str());
-                    i++;
-                }
-                else {
+                } else {
                     Temp = AddToken("<",COMOP,line);
                     Last->next= Temp;
                     Temp->prev = Last;
                     Last=Temp;
-                    printf("<------>33\n");
-                    printf("Token {%d, line:%d,%s }\n",Last->type,Last->line_number,Last->name.c_str());
                 }
             }
                 //>,>=
@@ -222,15 +215,12 @@ Position lex() {
                     Last->next= Temp;
                     Temp->prev = Last;
                     Last=Temp;
-                    printf(">------>37\n");
-                    printf("Token {%d, line:%d,%s }\n",Last->type,Last->line_number,Last->name.c_str());
+                    i++;
                 } else {
                     Temp = AddToken(">",COMOP,line);
                     Last->next= Temp;
                     Temp->prev = Last;
                     Last=Temp;
-                    printf(">-------36\n");
-                    printf("Token {%d, line:%d,%s }\n",Last->type,Last->line_number,Last->name.c_str());
                 }
             }
                 //余下定界符等
@@ -240,8 +230,6 @@ Position lex() {
                 Last->next= Temp;
                 Temp->prev = Last;
                 Last=Temp;
-                printf("%c------->%d\n",*(instr+i),symbol_num[IsSymbol(*(instr+i))]);
-                printf("Token {%d, line:%d,%s }\n",Last->type,Last->line_number,Last->name.c_str());
                 Token="";
             }
         }
@@ -250,15 +238,14 @@ Position lex() {
     return HEAD;
 }
 
-//int main(){
-//    Position Last = lex();
-//    printf("\n\n\n");
-//    Last = Last->next;
-//    while(Last->next!=NULL){
-//        printf("Token {%d,   line:%d,     %s }\n",Last->type,Last->line_number,Last->name.c_str());
-//        Last = Last->next;
-//    }
-//    printf("Token {%d,   line:%d,     %s }\n",Last->type,Last->line_number,Last->name.c_str());
-//
-//    return 0;
-//}
+int main(){
+    Position Last = lex();
+    printf("\n\n\n");
+    Last = Last->next;
+    while(Last->next!=NULL){
+        printf("Token {%d,   line:%d,     %s }\n",Last->type,Last->line_number,Last->name.c_str());
+        Last = Last->next;
+    }
+    printf("Token {%d,   line:%d,     %s }\n",Last->type,Last->line_number,Last->name.c_str());
+    return 0;
+}
