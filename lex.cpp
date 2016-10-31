@@ -60,9 +60,10 @@ Position lex() {
     string Token;//存放字符串
     freopen("/Users/yifan/seedcup/SeedCup/test.cpp","r",stdin);
     int line=1;
+    int exc_flag = false; //记录!=
 //    freopen("result.txt","w",stdout); //此行注释后，控制台输出，
     //否则文本输出
-    while((gets(instr))!=NULL) {
+    while((fgets(instr,256,stdin))!=NULL) {
         for(int i=0;i<strlen(instr);i++){
             if((*(instr+i)==' ') || (*(instr+i)=='\t') ){
                 i++;
@@ -122,6 +123,7 @@ Position lex() {
                 Temp->prev = Last;
                 Last=Temp;
                 i++;
+                exc_flag = true;
             }
             //+
             if((*(instr+i)=='+') && (*(instr+i+1)!='+')&&(!flag)){
@@ -179,7 +181,7 @@ Position lex() {
                 Last=Temp;
                 Token="";
             }
-            if(*(instr+i)=='='&&(!flag)){
+            if(*(instr+i)=='='&&(!flag)&&(!exc_flag)){
                 if(*(instr+i+1)=='='){
                     Temp = AddToken("==",COMOP,line);
                     Last->next= Temp;
@@ -224,7 +226,7 @@ Position lex() {
                 }
             }
                 //余下定界符等
-            else if(IsSymbol(*(instr+i))!=-1&&(!flag)) {
+            else if(IsSymbol(*(instr+i))!=-1&&(!flag)){
                 Token+=*(instr+i);
                 Temp = AddToken(Token,symbol_num[IsSymbol(*(instr+i))],line);
                 Last->next= Temp;
@@ -234,6 +236,7 @@ Position lex() {
             }
         }
         line++;
+        exc_flag = false;
     }
     return HEAD;
 }
